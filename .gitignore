@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+build/
+dist/
+wheels/
+*.whl
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Test / coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+
+# Local secrets (none expected, but defensive)
+.env
+.env.*
+*.pem
+*.key
+
+# Build / packaging artifacts
+*.tar.gz
+*.zip
