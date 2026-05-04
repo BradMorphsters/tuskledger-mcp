@@ -29,7 +29,7 @@ assistant can call tools like:
 - `get_net_worth` — current + 12-month trend
 - `get_holdings` — every investment position
 - `get_investments_summary` — portfolio roll-up + asset allocation
-- `get_retirement_projection` — Monte Carlo summary for your saved scenario
+- `get_retirement_projection` — Monte Carlo summary; supply your `current_age` (and any other scenario params) and the simulator runs against backend defaults
 - `run_sync` — trigger a Plaid pull
 - `list_stale_accounts` — accounts with stale data
 
