@@ -205,13 +205,37 @@ TOOLS: list[Tool] = [
     Tool(
         name="get_retirement_projection",
         description=(
-            "Run the multi-decade Monte Carlo retirement simulator with the "
-            "user's current saved scenario. Returns probability of success, "
-            "depletion age, summary at key milestones (retirement, age 73 "
-            "for RMDs, etc.). NOT a real-time edit interface — this just "
-            "reports the current saved scenario's outputs."
+            "Run the multi-decade Monte Carlo retirement simulator. Returns "
+            "probability of success, depletion age, and summary at key "
+            "milestones (retirement, age 73 for RMDs, etc.).\n\n"
+            "Caveat: scenarios live in the Tusk Ledger UI's localStorage on "
+            "the device the user last edited from — they aren't accessible "
+            "to this tool. So the user (or their assistant) must supply at "
+            "least current_age. Other params accept sensible defaults that "
+            "match the standard 4% rule scenario; pass any you know to "
+            "tighten the projection. To pull a saved scenario verbatim, the "
+            "user can copy it out of the Retirement page in the UI and "
+            "paste the values into the assistant's prompt."
         ),
-        inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+        inputSchema={
+            "type": "object",
+            "required": ["current_age"],
+            "properties": {
+                "current_age":           {"type": "integer", "description": "User's current age. Required."},
+                "retirement_age":        {"type": "integer", "description": "Target retirement age (default 65)."},
+                "spouse_age":            {"type": "integer", "description": "Spouse's current age. Optional — enables two-phase simulation when paired with spouse_retirement_age."},
+                "spouse_retirement_age": {"type": "integer", "description": "Age at which the spouse retires (in spouse's years)."},
+                "desired_annual_income": {"type": "number",  "description": "Target annual spending in retirement, today's dollars (default 80000)."},
+                "annual_contribution":   {"type": "number",  "description": "Annual contribution. Omit to auto-detect from last 12mo of investment-account inflows."},
+                "return_rate":           {"type": "number",  "description": "Real annual return during accumulation (default 0.06 = 6%)."},
+                "withdrawal_rate":       {"type": "number",  "description": "Safe withdrawal rate (default 0.04 = the 4% rule)."},
+                "pension_annual":        {"type": "number",  "description": "Annual pension income, today's dollars."},
+                "ss_annual":             {"type": "number",  "description": "Annual Social Security at the user's claim age."},
+                "ss_start_age":          {"type": "integer", "description": "Age at which to claim SS (62–70, default 67)."},
+                "inflation_rate":        {"type": "number",  "description": "Long-run inflation assumption (default 0.025)."},
+            },
+            "additionalProperties": False,
+        },
     ),
     Tool(
         name="run_sync",
@@ -278,7 +302,11 @@ def _dispatch(name: str, arguments: dict, client: TuskLedgerClient) -> Any:
         return client.investments_summary()
 
     if name == "get_retirement_projection":
-        return client.retirement_projection()
+        # Pass through any params the assistant supplied; the backend
+        # validates current_age (required) and assigns sane defaults to
+        # the rest. Scrub Nones so the URL stays clean.
+        params = {k: v for k, v in a.items() if v not in (None, "")}
+        return client.retirement_projection(**params)
 
     if name == "run_sync":
         return client.trigger_sync()

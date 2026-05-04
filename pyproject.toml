@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tuskledger-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "MCP server for Tusk Ledger — gives your AI assistant typed access to your local personal finance data."
 readme = "README.md"
 requires-python = ">=3.10"

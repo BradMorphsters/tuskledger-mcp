@@ -9,4 +9,4 @@ query the user's finance data without going through the web UI.
 Local-first all the way down: nothing here calls out to the network.
 The only HTTP calls are to 127.0.0.1.
 """
-__version__ = "0.1.0"
+__version__ = "0.1.1"
