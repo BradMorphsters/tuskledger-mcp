@@ -4,6 +4,8 @@
 > Gives your AI assistant typed access to your local personal finance
 > data — without sending anything outside your machine.
 
+**🌐 Project site: [www.tuskledger.com](https://www.tuskledger.com)** — what the parent app does, feature tour, public demo, and architecture. This package is the MCP bridge.
+
 [![CI](https://github.com/BradMorphsters/tuskledger-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/BradMorphsters/tuskledger-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
