@@ -148,6 +148,13 @@ class TuskLedgerClient:
     def upcoming_bills(self, **params) -> list[dict]:
         return self._request("GET", "/api/bills/upcoming", params=params)
 
+    # budgets
+    def list_budgets(self) -> list[dict]:
+        return self._request("GET", "/api/budgets/")
+
+    def get_budget(self, month: int, year: int) -> dict:
+        return self._request("GET", f"/api/budgets/{month}/{year}")
+
     # net worth
     def net_worth_latest(self) -> dict | None:
         return self._request("GET", "/api/net-worth/latest")

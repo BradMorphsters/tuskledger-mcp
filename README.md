@@ -52,16 +52,17 @@ leave the laptop.
 
 ## What tools are available
 
-13 read-mostly tools. Group at a glance:
+17 read-mostly tools. Group at a glance:
 
 | Group | Tools |
 |---|---|
 | **Accounts** | `list_accounts`, `list_stale_accounts` |
 | **Transactions** | `query_transactions`, `search_transactions` |
-| **Spending insight** | `get_spending_summary`, `get_top_merchants`, `get_recurring_subscriptions` |
-| **Cash flow** | `get_upcoming_bills` |
+| **Spending insight** | `get_spending_summary`, `get_top_merchants`, `get_recurring_subscriptions`, `get_merchant_details` |
+| **Cash flow** | `get_upcoming_bills`, `get_cash_flow_forecast` |
+| **Budgets** | `get_budget` (limits; pair with `get_spending_summary` for over/under) |
 | **Net worth & investments** | `get_net_worth`, `get_holdings`, `get_investments_summary` |
-| **Planning** | `get_retirement_projection` (Monte Carlo) |
+| **Taxes & planning** | `get_trading_tax_summary` (FIFO + wash sales), `get_retirement_projection` (Monte Carlo) |
 | **Ops** | `run_sync` (trigger a Plaid pull) |
 
 Full schemas (parameters, defaults, examples) are reported by the

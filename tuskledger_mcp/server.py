@@ -238,6 +238,83 @@ TOOLS: list[Tool] = [
         },
     ),
     Tool(
+        name="get_budget",
+        description=(
+            "Budget limits for a month: per-category limit_amount plus an "
+            "optional total_limit. Omit month/year for a list of every "
+            "budget that exists. NOTE: returns limits only, not spending — "
+            "pair with get_spending_summary for the same month to compute "
+            "over/under per category."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "month": {"type": "integer", "minimum": 1, "maximum": 12, "description": "1-12. Requires year."},
+                "year": {"type": "integer", "minimum": 2000, "maximum": 2100, "description": "e.g. 2026. Requires month."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="get_cash_flow_forecast",
+        description=(
+            "Project the next N days of cash flow from recurring charges/"
+            "income (known dates and amounts) plus a variable-spend "
+            "baseline. Returns a day-by-day series with running balance, "
+            "the projected low point, and upcoming events. The 'will I "
+            "have enough cash before payday?' answer."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "minimum": 7, "maximum": 180, "description": "Forecast horizon in days. Default 30."},
+                "baseline": {
+                    "type": "string",
+                    "enum": ["median_3", "median_6", "last_month", "rolling_90"],
+                    "description": "How variable (non-recurring) spend is estimated. Default median_3.",
+                },
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="get_trading_tax_summary",
+        description=(
+            "Realized gains/losses for a calendar year: per-account FIFO "
+            "lot matching mirroring the 1099-B, chain-correct wash-sale "
+            "adjustments, short- vs long-term split, and estimated tax. "
+            "Defaults to the current year-to-date and 22%/15% rates."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "year": {"type": "integer", "minimum": 1990, "maximum": 2100, "description": "Calendar year. Defaults to YTD."},
+                "account_id": {"type": "integer", "description": "Restrict to one investment account."},
+                "ordinary_marginal_rate": {"type": "number", "minimum": 0, "maximum": 0.5, "description": "Marginal ordinary-income rate for short-term gains. Default 0.22."},
+                "ltcg_rate": {"type": "number", "minimum": 0, "maximum": 0.5, "description": "Long-term capital gains rate. Default 0.15."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="get_merchant_details",
+        description=(
+            "Deep-dive on a single merchant: year-to-date total, all-time "
+            "total, transaction count, 12-month spend trend, and recent "
+            "transactions. Matches the name case-insensitively, including "
+            "normalized forms ('AMZN Mktp' rolls up under 'Amazon'). The "
+            "'how much have I spent at X?' answer."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "merchant_name": {"type": "string", "description": "Merchant display name, e.g. 'Amazon' or 'Whole Foods'."},
+            },
+            "required": ["merchant_name"],
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
         name="run_sync",
         description=(
             "Trigger a Plaid sync across all connected items. Same as "
@@ -307,6 +384,20 @@ def _dispatch(name: str, arguments: dict, client: TuskLedgerClient) -> Any:
         # the rest. Scrub Nones so the URL stays clean.
         params = {k: v for k, v in a.items() if v not in (None, "")}
         return client.retirement_projection(**params)
+
+    if name == "get_budget":
+        if a.get("month") and a.get("year"):
+            return client.get_budget(month=a["month"], year=a["year"])
+        return client.list_budgets()
+
+    if name == "get_cash_flow_forecast":
+        return client.cash_flow_forecast(**{k: v for k, v in a.items() if v not in (None, "")})
+
+    if name == "get_trading_tax_summary":
+        return client.trading_tax(**{k: v for k, v in a.items() if v not in (None, "")})
+
+    if name == "get_merchant_details":
+        return client.by_merchant(a["merchant_name"])
 
     if name == "run_sync":
         return client.trigger_sync()

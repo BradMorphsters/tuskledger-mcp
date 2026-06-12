@@ -19,11 +19,11 @@ from tuskledger_mcp.client import TuskLedgerError
 
 def test_every_tool_has_a_dispatch_branch():
     """If we add a tool to TOOLS we must add a dispatch case for it."""
+    # A bare MagicMock already auto-creates child mocks with usable
+    # return values on any attribute access — no setup loop needed.
+    # (The old dir()-based loop broke on newer mock versions where
+    # some dir() entries are real bound methods without .return_value.)
     client = MagicMock()
-    # Set sensible return values so each call doesn't raise
-    for attr in dir(client):
-        if not attr.startswith("_"):
-            getattr(client, attr).return_value = []
     for tool in srv.TOOLS:
         # Some tools need required args — provide minimal valid ones
         args = {}

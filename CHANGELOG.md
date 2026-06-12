@@ -4,6 +4,25 @@ All notable changes to `tuskledger-mcp` will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-06-11
+
+Four new read-only tools (13 → 17), all wrapping endpoints the backend
+already served — the client methods existed, they were just never
+exposed to assistants:
+
+- `get_budget` — per-category budget limits for a month (or all
+  budgets). Limits only; the description tells the assistant to pair
+  it with `get_spending_summary` to compute over/under.
+- `get_cash_flow_forecast` — day-by-day projection (7–180 days) with
+  running balance, projected low point, and the recurring events that
+  drive it. Baseline selectable (median_3 / median_6 / last_month /
+  rolling_90).
+- `get_trading_tax_summary` — realized gains for a year: FIFO lot
+  matching, chain-correct wash-sale adjustments, ST/LT split,
+  estimated tax at configurable rates.
+- `get_merchant_details` — single-merchant deep-dive: YTD, all-time,
+  12-month trend, recent transactions; normalized-name matching.
+
 ## [0.1.1] — 2026-05-04
 
 Honest contract pass for `get_retirement_projection`. The v0.1.0
