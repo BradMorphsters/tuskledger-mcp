@@ -4,6 +4,25 @@ All notable changes to `tuskledger-mcp` will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-06-13
+
+Six research-layer tools (17 → 23) wrapping the backend's new
+`/api/research/*` endpoints — the long-term-hold research layer:
+
+- `get_position_research` — held securities × research overlay (the cockpit).
+- `get_research_entities` — the scored universe, filterable by tier /
+  min conviction / held-only.
+- `get_research_for_ticker` — full dossier (thesis, catalysts, risks,
+  invalidation triggers, sources) for one ticker.
+- `get_research_alerts` — stale / overdue-catalyst / invalidation-watch /
+  below-cost-large-position / concentration flags.
+- `upsert_research_entity`, `update_research_field` — schema-validated
+  writes (blocked on read-only devices + the public demo by the backend).
+
+`domain` is optional on the read/write tools — omit it and the only/first
+research file on disk is used. Publishing (uv build/publish + the
+tool-count bump on the site + marketplace) is left as a manual step.
+
 ## [0.2.0] — 2026-06-11
 
 Four new read-only tools (13 → 17), all wrapping endpoints the backend

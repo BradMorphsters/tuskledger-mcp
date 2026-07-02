@@ -14,6 +14,7 @@ stays the same.
 from __future__ import annotations
 
 import os
+import urllib.parse
 from typing import Any
 
 import httpx
@@ -129,7 +130,10 @@ class TuskLedgerClient:
         return self._request("GET", "/api/transactions/category-breakdown", params=filters)
 
     def by_merchant(self, merchant_name: str) -> Any:
-        return self._request("GET", f"/api/transactions/by-merchant/{merchant_name}")
+        # Encode the merchant name so names containing /, ?, or # don't
+        # corrupt the URL path.
+        encoded = urllib.parse.quote(merchant_name, safe="")
+        return self._request("GET", f"/api/transactions/by-merchant/{encoded}")
 
     # analytics
     def top_merchants(self, **filters) -> Any:
@@ -179,3 +183,33 @@ class TuskLedgerClient:
     # plaid
     def trigger_sync(self) -> Any:
         return self._request("POST", "/api/plaid/sync")
+
+    # research (long-term-hold research layer)
+    def research_domains(self) -> list[dict]:
+        return self._request("GET", "/api/research/domains")
+
+    def research_entities(self, domain: str, **params) -> list[dict]:
+        return self._request("GET", f"/api/research/{domain}/universe", params=params)
+
+    def research_for_ticker(self, ticker: str) -> dict:
+        return self._request("GET", f"/api/research/ticker/{ticker}")
+
+    def position_research(self, domain: str) -> dict:
+        return self._request("GET", f"/api/research/{domain}/positions")
+
+    def research_alerts(self, domain: str) -> list[dict]:
+        return self._request("GET", f"/api/research/{domain}/alerts")
+
+    def upsert_research_entity(self, domain: str, entity: dict, updated_by: str = "claude") -> dict:
+        return self._request(
+            "POST", f"/api/research/{domain}/entity",
+            params={"updated_by": updated_by}, json=entity,
+        )
+
+    def update_research_field(
+        self, domain: str, entity_id: str, path: str, value: Any, updated_by: str = "claude"
+    ) -> dict:
+        return self._request(
+            "PATCH", f"/api/research/{domain}/entity/{entity_id}",
+            json={"path": path, "value": value, "updated_by": updated_by},
+        )

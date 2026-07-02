@@ -319,10 +319,136 @@ TOOLS: list[Tool] = [
         description=(
             "Trigger a Plaid sync across all connected items. Same as "
             "clicking 'Sync Now' in the UI. Returns a summary of what was "
-            "fetched (accounts updated, transactions added). Safe to call "
-            "freely — Plaid dedupes."
+            "fetched (accounts updated, transactions added). Call at most "
+            "once per conversation — production Plaid syncs are billable and "
+            "are not free, so don't hammer this."
         ),
         inputSchema={"type": "object", "properties": {}, "additionalProperties": False},
+    ),
+    # ── Long-term-hold research layer ────────────────────────────
+    Tool(
+        name="get_position_research",
+        description=(
+            "The long-term-hold cockpit: every security the user HOLDS that "
+            "the research universe covers, with its overlay — conviction, "
+            "upside, tier, next catalyst (flagged if overdue), invalidation "
+            "triggers, risk rating, and a stale-research flag — joined onto "
+            "the live position (market value, cost basis, unrealized gain/"
+            "loss, weight %, accounts, tax buckets). This is the headline "
+            "answer to 'for the names I own, is the thesis still intact?'. "
+            "Omit domain to use the only/first research domain on disk."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string", "description": "Research domain, e.g. 'critical-minerals'. Omit to auto-pick."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="get_research_entities",
+        description=(
+            "The scored research universe (not just held names), ranked by "
+            "conviction then upside. Each row carries ticker, name, category, "
+            "tier, conviction, upside, risk rating, a one-line thesis, and "
+            "whether the user holds it. Filter by tier, minimum conviction, "
+            "or held-only. Use when the user asks 'what are the highest-"
+            "conviction critical-minerals names?' or 'show me tier-1 only'."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string", "description": "Research domain. Omit to auto-pick the only/first one."},
+                "tier": {"type": "integer", "minimum": 1, "maximum": 3, "description": "1=producing, 2=near-term, 3=speculative."},
+                "min_conviction": {"type": "number", "minimum": 0, "maximum": 100, "description": "Drop names below this conviction score."},
+                "held_only": {"type": "boolean", "description": "Only names the user currently holds."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="get_research_for_ticker",
+        description=(
+            "Full research dossier for one ticker (across all domains): "
+            "thesis summary + detail, every catalyst with status, risks, "
+            "invalidation triggers, government support, fundamentals, scoring "
+            "factors, sources with confidence, and review cadence. Use when "
+            "the user asks 'what's the thesis on MP?' or 'why is USAR "
+            "high-conviction?'. Falls back to aliases for class-share/ADR/OTC."
+        ),
+        inputSchema={
+            "type": "object",
+            "required": ["ticker"],
+            "properties": {
+                "ticker": {"type": "string", "description": "Exchange ticker, e.g. 'USAR' or 'MP'."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="get_research_alerts",
+        description=(
+            "Derived watch-list for the research universe: large below-cost "
+            "positions, overdue catalysts, invalidation-trigger watches on "
+            "sizeable holdings, stale research past its review date, and "
+            "single-category concentration. Sorted high-severity first. The "
+            "'what needs my attention?' answer for a long-term holder. Omit "
+            "domain to use the only/first research domain."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string", "description": "Research domain. Omit to auto-pick."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="upsert_research_entity",
+        description=(
+            "Insert or update one research entity (a full or partial entity "
+            "object, matched by id/ticker). The whole file is re-validated "
+            "against the JSON Schema before an atomic write, so a malformed "
+            "entity is rejected and the file left untouched. A scoring "
+            "snapshot is appended to history. Use when the user says 'add "
+            "ticker X to the research file' or 're-score Y'. Blocked on "
+            "read-only devices and the public demo. Set confidence on "
+            "LLM-authored facts to 'medium' until verified."
+        ),
+        inputSchema={
+            "type": "object",
+            "required": ["entity"],
+            "properties": {
+                "domain": {"type": "string", "description": "Research domain to write into. Omit to auto-pick the only/first one."},
+                "entity": {"type": "object", "description": "Entity object; must have id or ticker, plus name, security_type, and scores for a brand-new entity."},
+                "updated_by": {"type": "string", "description": "Writer label recorded on the entity (default 'claude')."},
+            },
+            "additionalProperties": False,
+        },
+    ),
+    Tool(
+        name="update_research_field",
+        description=(
+            "Set a single field on one research entity by id — e.g. path "
+            "'scores.conviction' value 95, or 'review.next_due' value "
+            "'2026-09-12', or 'catalysts[0].status' value 'hit'. Re-validates "
+            "and writes atomically; rejects on schema violation. Lighter than "
+            "upsert for a one-field tweak. Blocked on read-only devices and "
+            "the public demo."
+        ),
+        inputSchema={
+            "type": "object",
+            "required": ["id", "path", "value"],
+            "properties": {
+                "domain": {"type": "string", "description": "Research domain. Omit to auto-pick the only/first one."},
+                "id": {"type": "string", "description": "Entity id (stable internal id, usually the ticker)."},
+                "path": {"type": "string", "description": "Dotted path, e.g. 'scores.conviction' or 'catalysts[0].status'."},
+                "value": {"description": "New value (any JSON type)."},
+                "updated_by": {"type": "string", "description": "Writer label (default 'claude')."},
+            },
+            "additionalProperties": False,
+        },
     ),
 ]
 
@@ -402,7 +528,55 @@ def _dispatch(name: str, arguments: dict, client: TuskLedgerClient) -> Any:
     if name == "run_sync":
         return client.trigger_sync()
 
+    # ── research ──────────────────────────────────────────────────
+    if name == "get_position_research":
+        return client.position_research(_resolve_domain(a, client))
+    if name == "get_research_entities":
+        params = {}
+        for k in ("tier", "min_conviction"):
+            if a.get(k) not in (None, ""):
+                params[k] = a[k]
+        if a.get("held_only"):
+            params["held_only"] = True
+        return client.research_entities(_resolve_domain(a, client), **params)
+    if name == "get_research_for_ticker":
+        return client.research_for_ticker(a["ticker"])
+    if name == "get_research_alerts":
+        return client.research_alerts(_resolve_domain(a, client))
+    if name == "upsert_research_entity":
+        return client.upsert_research_entity(
+            _resolve_domain(a, client),
+            a.get("entity") or {},
+            updated_by=a.get("updated_by", "claude"),
+        )
+    if name == "update_research_field":
+        return client.update_research_field(
+            _resolve_domain(a, client),
+            a.get("id"),
+            a.get("path"),
+            a.get("value"),
+            updated_by=a.get("updated_by", "claude"),
+        )
+
     raise TuskLedgerError(f"Unknown tool: {name!r}")
+
+
+def _resolve_domain(a: dict, client: TuskLedgerClient) -> str:
+    """Use the caller's `domain`, else the only/first research domain on disk.
+
+    Keeps the research tools usable without the assistant having to know the
+    domain key when there's exactly one research file (the common case).
+    """
+    dom = a.get("domain")
+    if dom:
+        return dom
+    domains = client.research_domains()
+    if not domains:
+        raise TuskLedgerError(
+            "No research domains found. Drop a <domain>.research.json into the "
+            "research/ folder (validated against research.schema.json) first."
+        )
+    return domains[0]["domain"]
 
 
 # ── Server wiring ────────────────────────────────────────────────

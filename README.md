@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
 [![Local-first](https://img.shields.io/badge/local--first-yes-brightgreen.svg)](https://www.tuskledger.com#architecture)
-[![Tools: 13](https://img.shields.io/badge/tools-13-1185fe.svg)](#what-tools-are-available)
+[![Tools: 23](https://img.shields.io/badge/tools-23-1185fe.svg)](#what-tools-are-available)
 [![Main app](https://img.shields.io/badge/main%20app-tuskledger-1185fe.svg)](https://github.com/BradMorphsters/tuskledger)
 
 ---
@@ -52,7 +52,7 @@ leave the laptop.
 
 ## What tools are available
 
-17 read-mostly tools. Group at a glance:
+23 read-mostly tools. Group at a glance:
 
 | Group | Tools |
 |---|---|
